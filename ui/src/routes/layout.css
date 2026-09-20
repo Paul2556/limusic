@@ -530,6 +530,90 @@
 	--sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Pokémon Emerald: ported from Paul's Obsidian theme (Paul2556/Main-Vault, .obsidian/themes/Pokemon Emerald).
+   Colours are the theme's own hex values converted to oklch. --radius has no source value (the
+   Obsidian theme sets none), so 0.4rem is a pick, and the Roundness slider overrides it anyway.
+   The font is PIosevka by name only: it isn't a bundled package, so load the .ttf from Settings →
+   Themes → Load font file. Until then the stack falls back to ui-monospace. */
+.theme-emerald {
+	--background: oklch(0.9693 0.0058 153.7755);
+	--foreground: oklch(0.3001 0.0317 165.5514);
+	--card: oklch(0.9452 0.0109 149.8563);
+	--card-foreground: oklch(0.3001 0.0317 165.5514);
+	--popover: oklch(0.9452 0.0109 149.8563);
+	--popover-foreground: oklch(0.3001 0.0317 165.5514);
+	--primary: oklch(0.5635 0.1173 159.9617);
+	--primary-foreground: oklch(0.9693 0.0058 153.7755);
+	--secondary: oklch(0.9204 0.0159 154.4553);
+	--secondary-foreground: oklch(0.3001 0.0317 165.5514);
+	--muted: oklch(0.9452 0.0109 149.8563);
+	--muted-foreground: oklch(0.5012 0.0398 162.8520);
+	--accent: oklch(0.5535 0.0950 231.2362);
+	--accent-foreground: oklch(0.3001 0.0317 165.5514);
+	--destructive: oklch(0.4851 0.1283 16.4353);
+	--border: oklch(0.8821 0.0185 155.7741);
+	--input: oklch(0.8821 0.0185 155.7741);
+	--ring: oklch(0.6265 0.1199 160.9595);
+	--chart-1: oklch(0.6916 0.1287 160.7322);
+	--chart-2: oklch(0.6808 0.1032 227.2638);
+	--chart-3: oklch(0.6265 0.1199 160.9595);
+	--chart-4: oklch(0.6512 0.1131 48.2466);
+	--chart-5: oklch(0.5896 0.0901 305.5218);
+	--sidebar: oklch(0.9452 0.0109 149.8563);
+	--sidebar-foreground: oklch(0.3001 0.0317 165.5514);
+	--sidebar-primary: oklch(0.5635 0.1173 159.9617);
+	--sidebar-primary-foreground: oklch(0.9693 0.0058 153.7755);
+	--sidebar-accent: oklch(0.9261 0.0208 156.8014);
+	--sidebar-accent-foreground: oklch(0.3001 0.0317 165.5514);
+	--sidebar-border: oklch(0.8821 0.0185 155.7741);
+	--sidebar-ring: oklch(0.6265 0.1199 160.9595);
+	--radius: 0.4rem;
+	--font-sans: 'PIosevka', ui-monospace, monospace;
+	--font-heading: 'PIosevka', ui-monospace, monospace;
+	--font-serif: ui-serif, Georgia, serif;
+	--font-mono: 'PIosevka', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	--shadow-2xs: 0 1px rgb(0 0 0 / 0.05);
+	--shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+	--shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+	--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+	--shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+	--shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+	--shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+.dark.theme-emerald {
+	--background: oklch(0.1841 0.0106 196.2638);
+	--foreground: oklch(0.8634 0.0179 164.5899);
+	--card: oklch(0.2059 0.0106 185.7410);
+	--card-foreground: oklch(0.8634 0.0179 164.5899);
+	--popover: oklch(0.2059 0.0106 185.7410);
+	--popover-foreground: oklch(0.8634 0.0179 164.5899);
+	--primary: oklch(0.6916 0.1287 160.7322);
+	--primary-foreground: oklch(0.1841 0.0106 196.2638);
+	--secondary: oklch(0.2149 0.0240 190.8481);
+	--secondary-foreground: oklch(0.8634 0.0179 164.5899);
+	--muted: oklch(0.2059 0.0106 185.7410);
+	--muted-foreground: oklch(0.6085 0.0365 164.3935);
+	--accent: oklch(0.6808 0.1032 227.2638);
+	--accent-foreground: oklch(0.1841 0.0106 196.2638);
+	--destructive: oklch(0.4851 0.1283 16.4353);
+	--border: oklch(0.2496 0.0152 174.7402);
+	--input: oklch(0.2496 0.0152 174.7402);
+	--ring: oklch(0.6265 0.1199 160.9595);
+	--chart-1: oklch(0.6916 0.1287 160.7322);
+	--chart-2: oklch(0.6808 0.1032 227.2638);
+	--chart-3: oklch(0.6265 0.1199 160.9595);
+	--chart-4: oklch(0.6512 0.1131 48.2466);
+	--chart-5: oklch(0.5896 0.0901 305.5218);
+	--sidebar: oklch(0.2059 0.0106 185.7410);
+	--sidebar-foreground: oklch(0.8634 0.0179 164.5899);
+	--sidebar-primary: oklch(0.6916 0.1287 160.7322);
+	--sidebar-primary-foreground: oklch(0.1841 0.0106 196.2638);
+	--sidebar-accent: oklch(0.2845 0.0449 166.5088);
+	--sidebar-accent-foreground: oklch(0.8634 0.0179 164.5899);
+	--sidebar-border: oklch(0.2496 0.0152 174.7402);
+	--sidebar-ring: oklch(0.6265 0.1199 160.9595);
+}
+
 /* The blurred cover behind a hero (HomeHero, NowPlaying, the album and library headers), on its
    own compositing layer. That promotion is the whole point of the class: left unpromoted,
    WebKitGTK re-runs the 40px gaussian over the element every time anything underneath it repaints,
