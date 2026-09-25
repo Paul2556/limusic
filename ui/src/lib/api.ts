@@ -140,6 +140,8 @@ export interface BrowseItem {
 	thumbnail?: string;
 	/** "3:47" — song items from a list-style shelf only (card shelves don't carry one). */
 	duration?: string;
+	/** Song cards only: the track's album (`MPRE…`), what puts "Go to album" in its menus. */
+	albumId?: string;
 	/** Song cards only: the artist line run by run, so a card that gets played keeps its links. */
 	artistRuns?: ArtistRun[];
 	/** Play count as YouTube abbreviates it ("2.5B") — search song rows only. */
@@ -400,6 +402,24 @@ export const appIconPath = () => invoke<string | null>('app_icon_path');
 
 /** Grant the webview a URL for one font file the user picked, so `@font-face` can load it. */
 export const allowFontFile = (path: string) => invoke<void>('allow_font_file', { path });
+
+// --- global hotkeys -------------------------------------------------------------------------
+export interface HotkeysConfig {
+	enabled: boolean;
+	bindings: Record<string, string>;
+}
+
+export interface HotkeyRegisterResult {
+	success: boolean;
+	config: HotkeysConfig;
+	errors: Record<string, string>;
+}
+
+export const getGlobalHotkeys = () => invoke<HotkeysConfig>('get_global_hotkeys');
+export const globalHotkeysOnWayland = () => invoke<boolean>('global_hotkeys_on_wayland');
+export const setGlobalHotkeys = (config: HotkeysConfig) =>
+	invoke<HotkeyRegisterResult>('set_global_hotkeys', { config });
+export const resetGlobalHotkeys = () => invoke<HotkeyRegisterResult>('reset_global_hotkeys');
 
 /** One published release: the GitHub release description, verbatim markdown. */
 export interface ReleaseNote {

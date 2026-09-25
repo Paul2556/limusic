@@ -8,6 +8,7 @@ mod commands;
 mod db;
 mod diagnostics;
 mod discord;
+mod hotkeys;
 mod http;
 mod lastfm;
 mod listentogether;
@@ -108,6 +109,13 @@ fn tune_webview(win: &tauri::WebviewWindow, media: bool) {
             settings.set_enable_webrtc(false);
             settings.set_enable_webgl(false);
             settings.set_enable_html5_database(false); // WebSQL. localStorage is a separate switch.
+
+            // Two-finger swipe to go back (#302). WebKit walks its own back/forward list, which
+            // for this SPA is SvelteKit's pushState entries: the same ones the titlebar's back
+            // button steps through. It only fires once a horizontal scroller has run out, so the
+            // shelves keep their swipes. Windows has this on by default; macOS would need
+            // WKWebView's allowsBackForwardNavigationGestures, which wry does not expose.
+            settings.set_enable_back_forward_navigation_gestures(true);
         }
     });
     match res {
@@ -290,6 +298,15 @@ pub fn run() {
                 .with_filter(|label| label == "main")
                 .build(),
         )
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, shortcut, event| {
+                    if let Some(mgr) = app.try_state::<Arc<hotkeys::HotkeysManager>>() {
+                        mgr.handle_event(app, shortcut, event.state());
+                    }
+                })
+                .build(),
+        )
         .setup(|app| {
             let handle = app.handle().clone();
 
@@ -363,7 +380,12 @@ pub fn run() {
             }
             // Before anything can play: the first track of a restored queue has to come out at the
             // level the user left, not at 100.
-            let _ = player.set_volume(state::saved_volume(&db));
+            let volume = state::saved_volume(&db);
+            let _ = player.set_volume(volume);
+            if volume > 0 {
+                // The level a mute hotkey returns to, when the app muted before any change.
+                hotkeys::LAST_NONZERO_VOLUME.store(volume, std::sync::atomic::Ordering::Relaxed);
+            }
             player.set_crossfade(state::saved_crossfade(&db));
             let events = player.take_events().expect("player events");
 
@@ -436,6 +458,15 @@ pub fn run() {
             // System tray: playback controls + show/quit while running in the background.
             if let Err(e) = tray::init(&handle) {
                 tracing::warn!(error = %e, "tray init failed (continuing without tray)");
+            }
+
+            // System-wide global hotkeys for playback control
+            let hotkeys_cfg = hotkeys::load_config(&app_state.db);
+            let hotkeys_mgr = Arc::new(hotkeys::HotkeysManager::new(hotkeys_cfg.clone()));
+            app.manage(hotkeys_mgr.clone());
+            let reg_res = hotkeys_mgr.apply_config(&handle, hotkeys_cfg);
+            if !reg_res.success {
+                tracing::warn!(errors = ?reg_res.errors, "some global hotkeys could not be registered on startup");
             }
 
             // A custom app icon (#173) has to be pushed at each surface every launch, since only
@@ -569,7 +600,8 @@ pub fn run() {
             //
             // The cipher webview rides the same tick, for the same reason: it is a whole
             // `WebKitWebProcess` (91 MiB PSS / 234 MiB RSS measured on Fedora) held for two
-            // functions that run once per track resolve.
+            // functions that run once per track resolve. Not on Windows, where rebuilding it
+            // freezes the app: see `CipherDeobfuscator::teardown_if_idle` (issue #288).
             {
                 let potoken = potoken.clone();
                 let cipher = cipher.clone();
@@ -638,6 +670,10 @@ pub fn run() {
             commands::forget_video_stream,
             commands::get_settings,
             commands::set_setting,
+            commands::get_global_hotkeys,
+            commands::global_hotkeys_on_wayland,
+            commands::set_global_hotkeys,
+            commands::reset_global_hotkeys,
             commands::get_stream_clients,
             commands::clear_caches,
             commands::set_app_icon,
@@ -860,6 +896,22 @@ fn spawn_event_pump(
                         };
                         let _ = app.emit("playback-error", serde_json::json!({ "message": msg }));
                     }
+                }
+                PlayerEvent::AudioDeviceLost => {
+                    tracing::warn!("audio device unavailable, holding the queue where it is");
+                    state.on_audio_device_lost().await;
+                    let _ = app.emit(
+                        "playback-error",
+                        serde_json::json!({
+                            "message": "Your audio device is unavailable. Press play once it's back."
+                        }),
+                    );
+                }
+                PlayerEvent::LookaheadFailed(msg) => {
+                    // No toast: the user is still hearing the current track and nothing they can
+                    // see has gone wrong. The only thing owed is the eviction.
+                    tracing::warn!(error = %msg, "lookahead preload failed");
+                    state.on_lookahead_failed().await;
                 }
                 PlayerEvent::Error(msg) => {
                     tracing::error!(error = %msg, "player error");

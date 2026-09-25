@@ -63,12 +63,14 @@
 	import { getVersion } from '@tauri-apps/api/app';
 	import { t, setLocale, currentLocale, LOCALES, type LocaleId } from '$lib/i18n.svelte';
 	import { appIcon, chooseAppIcon } from '$lib/appicon.svelte';
+	import GlobalHotkeysSettings from '$lib/components/GlobalHotkeysSettings.svelte';
 
-	type TabId = 'general' | 'themes' | 'playback' | 'discord' | 'data' | 'about';
+	type TabId = 'general' | 'themes' | 'playback' | 'hotkeys' | 'discord' | 'data' | 'about';
 	const TABS = $derived<{ id: TabId; label: string; hint: string; icon: typeof Settings02Icon }[]>([
 		{ id: 'general', label: t('settings.tabs.general'), hint: t('settings.tabs.general_hint'), icon: Settings02Icon },
 		{ id: 'themes', label: t('settings.tabs.themes'), hint: t('settings.tabs.themes_hint'), icon: PaintBoardIcon },
 		{ id: 'playback', label: t('settings.tabs.playback'), hint: t('settings.tabs.playback_hint'), icon: PlayCircleIcon },
+		{ id: 'hotkeys', label: t('settings.tabs.hotkeys'), hint: t('settings.tabs.hotkeys_hint'), icon: KeyboardIcon },
 		{ id: 'discord', label: t('settings.tabs.discord'), hint: t('settings.tabs.discord_hint'), icon: DiscordIcon },
 		{ id: 'data', label: t('settings.tabs.data'), hint: t('settings.tabs.data_hint'), icon: Database02Icon },
 		{ id: 'about', label: t('settings.tabs.about'), hint: t('settings.tabs.about_hint'), icon: InformationCircleIcon }
@@ -295,6 +297,9 @@
 	const quality = $derived(settings.quality ?? 'HIGH');
 	const historyOn = $derived(settings.enable_history !== 'false');
 	const autoplayOn = $derived(settings.autoplay !== 'false');
+	// On unless turned off: loudness matching is what YTM does, and it's what most people want.
+	// Off gives the untouched master, limiter included (#298, #300).
+	const normalizeOn = $derived(settings.normalize_volume !== 'false');
 	// Off by default: experimental, and it runs a second decoder while tracks overlap.
 	const crossfadeOn = $derived(settings.crossfade === 'true');
 	// Clamped like the player clamps it (`set_crossfade`), so a stored value from anywhere but this
@@ -355,6 +360,12 @@
 	async function setAutoplay(on: boolean) {
 		settings.autoplay = on ? 'true' : 'false';
 		await api.setSetting('autoplay', settings.autoplay);
+	}
+
+	// Rust retunes the track that's already playing, so the difference is audible immediately.
+	async function setNormalize(on: boolean) {
+		settings.normalize_volume = on ? 'true' : 'false';
+		await api.setSetting('normalize_volume', settings.normalize_volume);
 	}
 
 	async function setCrossfade(on: boolean) {
@@ -508,7 +519,7 @@
 	     transitioning the width relayouts the whole modal every frame, and WebKitGTK is the webview
 	     that would pay for it. -->
 	<Dialog.Content
-		class="gap-0 overflow-hidden p-0 {tab === 'discord' ? 'sm:max-w-5xl' : 'sm:max-w-3xl'}"
+		class="gap-0 overflow-hidden p-0 {tab === 'discord' ? 'sm:max-w-5xl' : tab === 'hotkeys' ? 'sm:max-w-4xl' : 'sm:max-w-3xl'}"
 	>
 		<Dialog.Description class="sr-only">{t('settings.title')}</Dialog.Description>
 
@@ -555,7 +566,7 @@
 				{#if loaded && tab === 'discord'}
 					<DiscordSettings {settings} />
 				{:else}
-				<div class="min-w-0 flex-1 overflow-y-auto px-6 py-5">
+				<div class="min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-5">
 					{#if !loaded}
 						<p class="text-sm text-muted-foreground">{t('common.loading')}</p>
 					{:else if tab === 'general'}
@@ -726,6 +737,12 @@
 									control: qualityPicker
 								})}
 								{@render row({
+									title: t('settings.playback.normalize_volume'),
+									desc: t('settings.playback.normalize_volume_hint'),
+									control: normalizeSwitch,
+									tall: true
+								})}
+								{@render row({
 									title: t('settings.playback.autoplay'),
 									desc: t('settings.playback.autoplay_hint'),
 									control: autoplaySwitch
@@ -823,6 +840,8 @@
 								{@render row({ title: t('settings.general.stream_clients'), below: clientList })}
 							</div>
 						</section>
+					{:else if tab === 'hotkeys'}
+						<GlobalHotkeysSettings />
 					{:else if tab === 'data'}
 						<section class={GROUP}>
 							<h3 class={LABEL}>{t('settings.sections.network')}</h3>
@@ -995,6 +1014,7 @@
 		checked={stickyShuffleOn}
 		onCheckedChange={setStickyShuffle}
 	/>{/snippet}
+{#snippet normalizeSwitch()}<Switch checked={normalizeOn} onCheckedChange={setNormalize} />{/snippet}
 {#snippet musicVideoSwitch()}<Switch checked={musicVideosOn} onCheckedChange={setMusicVideos} />{/snippet}
 {#snippet hideVideoSwitch()}<Switch checked={hideVideosOn} onCheckedChange={setHideVideos} />{/snippet}
 {#snippet lastfmPrimarySwitch()}<Switch
