@@ -63,7 +63,8 @@ jobs:
     # PINNED. macos-latest tracks the newest macOS, and since every bundled Homebrew dylib is built
     # for the runner's OS, that would silently raise the floor for users. Oldest arm64 runner wins.
     runs-on: macos-14
-    # A healthy run is ~15 min, ~25 on a cold cargo cache (brew install mpv alone is a few minutes).
+    # A healthy run is ~15 min, ~25 on a cold cargo cache (brew installs alone are a few minutes, and
+    # building mpv from scripts/macos/mpv.rb adds ~1.5 min on an M5 Air, likely more on the runner).
     timeout-minutes: 45
     steps:
       - name: Resolve the tag
@@ -125,9 +126,28 @@ jobs:
           done
           echo "::warning::no player-cipher registry reachable, shipping the empty table; clients will fetch it at runtime"
 
+      # The mpv recipe below lives in this workflow's own commit, and the checkout above is the tag,
+      # which may predate it (a backfill of v0.4.5 certainly does). So fetch just that directory from
+      # the commit the workflow runs from, off to the side where the build never looks.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-recipes
+          sparse-checkout: scripts/macos
+          persist-credentials: false
+
       # libmpv (the whole point of this being a chore) plus dylibbundler, which does the dependency
       # walk further down. HOMEBREW_NO_AUTO_UPDATE: `brew update` is a minute of git fetching that
       # changes nothing about which bottles this job pours.
+      #
+      # MPV IS BUILT FROM scripts/macos/mpv.rb, NOT POURED. mpv 0.41.0's CoreAudio output registers
+      # its device-change listener before the steps of init() that can fail and never removes it on
+      # failure, so after one failed init (a device vanishing: sleep, Bluetooth headphones) the next
+      # device change calls back into a freed ao and segfaults in hotplug_cb (mpv issue #18274).
+      # Homebrew backported the fix in mpv 0.41.0_10, but this runner pours whatever its stale
+      # formula snapshot says, which on 2026-10-19 was still _9, and newer mpv bottles skip macOS
+      # 14 anyway. Building only mpv from the vendored recipe keeps every dependency a bottle,
+      # costs a few minutes, and cannot regress quietly. Delete it when that file says to.
       - name: libmpv + dylibbundler
         env:
           HOMEBREW_NO_AUTO_UPDATE: "1"
@@ -135,7 +155,20 @@ jobs:
           HOMEBREW_NO_ENV_HINTS: "1"
         run: |
           set -euo pipefail
-          brew install mpv dylibbundler
+          brew tap-new --no-git limusic/local
+          cp .ci-recipes/scripts/macos/mpv.rb "$(brew --repository limusic/local)/Formula/mpv.rb"
+          brew install --build-from-source limusic/local/mpv
+          brew install dylibbundler
+          # Prove the libmpv being bundled is the one just built, not a bottle that got in first.
+          # A failed patch already fails the install, so source + tap is what is left to check.
+          MPV_INFO="$(brew info --json=v2 limusic/local/mpv)"
+          if [ "$(jq -r '.formulae[0].installed[0].built_as_bottle' <<<"$MPV_INFO")" != "false" ] \
+             || [ "$(jq -r '.formulae[0].tap' <<<"$MPV_INFO")" != "limusic/local" ]; then
+            echo "::error::the installed mpv is not the one built from scripts/macos/mpv.rb, so it may lack the CoreAudio hotplug fix"
+            jq '.formulae[0] | {tap, installed}' <<<"$MPV_INFO"
+            exit 1
+          fi
+          echo "mpv: $(jq -r '.formulae[0].installed[0].version' <<<"$MPV_INFO") built from scripts/macos/mpv.rb"
           PREFIX="$(brew --prefix)"
           # The formula could stop shipping libmpv (it is a build option, not the formula's point).
           # Fail here with a sentence, rather than 200 lines of linker error further down.
