@@ -17,7 +17,9 @@
 		"pending": "Wyszukiwanie {count} zaznaczonych utworów na stronach, które wciąż się ładują.",
 		"local_playlist": "Plików lokalnych nie można dodawać do playlisty YouTube.",
 		"account_changed": "Przerwano dodawanie utworów, ponieważ konto zostało zmienione.",
-		"playlist_partial": "Dodano {added} do {playlist}; {duplicates} już tam było; {remaining} niepotwierdzonych. {error}"
+		"playlist_partial": "Dodano {added} do {playlist}; {duplicates} już tam było; {remaining} niepotwierdzonych. {error}",
+		"remove": "Usuń z tej playlisty",
+		"remove_confirm": "Usunąć {count}?"
 	},
 	"common": {
 		"loading": "Ładowanie...",
@@ -83,7 +85,8 @@
 		"shuffle_all": "Wymieszaj wszystko",
 		"play_all": "Odtwórz wszystko",
 		"top_result": "Najlepszy wynik",
-		"all_results_for": "Wszystkie wyniki dla „{query}”"
+		"all_results_for": "Wszystkie wyniki dla „{query}”",
+		"videos": "Filmy"
 	},
 	"nav": {
 		"home": "Strona główna",
@@ -160,7 +163,8 @@
 		"remove_dislike": "Usuń „nie lubię”",
 		"add_to_playlist": "Dodaj do playlisty",
 		"pin_to_top": "Przypnij",
-		"unpin": "Odepnij"
+		"unpin": "Odepnij",
+		"remove_from_this_playlist": "Remove from this playlista"
 	},
 	"home": {
 		"good_morning": "Dzień dobry",
@@ -271,7 +275,9 @@
 			"data": "Dane i pamięć",
 			"data_hint": "Sieć i pliki w pamięci podręcznej.",
 			"about": "Informacje",
-			"about_hint": "Wersja, aktualizacje i zmiany."
+			"about_hint": "Wersja, aktualizacje i zmiany.",
+			"hotkeys": "Skróty globalne",
+			"hotkeys_hint": "Ogólnosystemowe skróty do sterowania odtwarzaniem."
 		},
 		"sections": {
 			"language": "Język",
@@ -388,7 +394,12 @@
 			"lastfm_primary_strict": "Pomijaj również wykonawców połączonych znakiem „&”",
 			"lastfm_primary_strict_hint": "„Future & Metro Boomin” zostanie zascrobblowane jako „Future”. Duety z „&” w nazwie również zostaną skrócone.",
 			"lyrics_provider": "Zsynchronizowane teksty (Boidu/LRCLIB)",
-			"lyrics_provider_hint": "Pobieraj teksty synchronizowane przez społeczność dla aktywnych utworów."
+			"lyrics_provider_hint": "Pobieraj teksty synchronizowane przez społeczność dla aktywnych utworów.",
+			"crossfade": "Crossfade",
+			"crossfade_hint": "Jeden utwór płynnie przechodzi w drugi. Zużywa trochę więcej pamięci, bo w tym momencie grają dwa utwory naraz.",
+			"crossfade_duration": "Czas trwania płynnego przejścia",
+			"crossfade_duration_hint": "Jak długo utwory się nakładają. Krótkie utwory mają krótsze przejścia, więc płynne przejście nigdy nie zaczyna się, zanim poprzedni utwór się nie skończy.",
+			"crossfade_seconds": "{secs}s"
 		},
 		"data": {
 			"clear_cache": "Wyczyść pamięć podręczną obrazów i strumieni",
@@ -474,6 +485,45 @@
 			"preview_status": "Lista członków",
 			"preview_you": "Ty",
 			"preview_card": "Karta profilu"
+		},
+		"hotkeys": {
+			"title": "Globalne skróty klawiszowe",
+			"description": "Steruj odtwarzaniem za pomocą konfigurowalnych skrótów klawiszowych, nawet gdy Limusic jest zminimalizowany lub działa w tle.",
+			"enable": "Włącz globalne skróty klawiszowe",
+			"enable_hint": "Globalne skróty klawiszowe są wyłączone. Włącz je, aby nasłuchiwać skrótów w całym systemie.",
+			"off": "Wyłączone",
+			"rebind": "Zmień skrót",
+			"recording": "Przytrzymaj modyfikator i naciśnij klawisz...",
+			"wayland_hint": "Może nie działać w GNOME (Wayland).",
+			"clear": "Wyczyść skrót",
+			"reset": "Resetuj do domyślnych",
+			"conflict": "Ten skrót jest już przypisany do „{action}”",
+			"failed_register": "Nie udało się zarejestrować skrótu w systemie (może być używany przez inną aplikację)",
+			"section_playback": "Odtwarzanie",
+			"section_audio": "Dźwięk",
+			"section_window": "Okno",
+			"action_play_pause": "Odtwórz / Wstrzymaj",
+			"action_play_pause_hint": "Przełączaj między odtwarzaniem a pauzą.",
+			"action_next_track": "Następny utwór",
+			"action_next_track_hint": "Przejdź do następnego utworu w kolejce.",
+			"action_prev_track": "Poprzedni utwór",
+			"action_prev_track_hint": "Wróć do poprzedniego utworu w kolejce.",
+			"action_volume_up": "Głośniej",
+			"action_volume_up_hint": "Zwiększ głośność odtwarzania o 5%.",
+			"action_volume_down": "Ciszej",
+			"action_volume_down_hint": "Zmniejsz głośność odtwarzania o 5%.",
+			"action_mute_toggle": "Wycisz / Włącz",
+			"action_mute_toggle_hint": "Przełączaj między wyciszeniem a poprzednią głośnością.",
+			"action_seek_forward": "Przewiń do przodu",
+			"action_seek_forward_hint": "Przewiń o 10 sekund do przodu w utworze.",
+			"action_seek_backward": "Przewiń do tyłu",
+			"action_seek_backward_hint": "Przewiń utwór o 10 sekund do tyłu.",
+			"action_toggle_shuffle": "Przełącz losowe odtwarzanie",
+			"action_toggle_shuffle_hint": "Włącz lub wyłącz losowe odtwarzanie kolejki.",
+			"action_toggle_repeat": "Przełącz powtarzanie",
+			"action_toggle_repeat_hint": "Przełączaj tryb powtarzania: wyłączony, wszystko, jeden.",
+			"action_show_app": "Pokaż aplikację",
+			"action_show_app_hint": "Wysuń okno Limusic na pierwszy plan."
 		}
 	},
 	"dialogs": {
@@ -544,8 +594,8 @@
 			"invite_code": "Kod zaproszenia",
 			"invite_placeholder": "Wklej zaproszenie przesłane przez znajomego",
 			"invite_hint": "Zaproszenie zawiera adres serwera; nie trzeba nic więcej konfigurować.",
-			"your_name": "Twoje imię",
-			"your_name_placeholder": "Twoje imię",
+			"your_name": "Twoja Nazwa",
+			"your_name_placeholder": "Nazwij się",
 			"join_button": "Dołącz do sesji",
 			"sync_server": "Serwer synchronizacji",
 			"sync_server_placeholder": "wss://twoja-maszyna.ts.net/ws",
@@ -713,6 +763,7 @@
 		"subscribed": "Zasubskrybowano {name}",
 		"unsubscribed": "Anulowano subskrypcję",
 		"signed_in_as": "Zalogowano jako {name}",
-		"switched_to": "Przełączono na {name}"
+		"switched_to": "Przełączono na {name}",
+		"could_not_add": "Nie udało się tego dodać. Spróbuj to otworzyć"
 	}
 }

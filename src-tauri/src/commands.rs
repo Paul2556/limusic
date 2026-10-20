@@ -173,6 +173,9 @@ pub async fn seek(state: St<'_>, position: f64) -> Result<(), String> {
 #[tauri::command]
 pub async fn set_volume(state: St<'_>, volume: i64) -> Result<(), String> {
     state.player.set_volume(volume).map_err(|e| e.to_string())?;
+    if volume > 0 {
+        crate::hotkeys::LAST_NONZERO_VOLUME.store(volume, std::sync::atomic::Ordering::Relaxed);
+    }
     // There is one volume and there can be two windows (the mini player). Without this the one
     // that didn't move the slider keeps showing the old level and lies about what you're hearing.
     let _ = state.app.emit("volume", volume);
@@ -199,10 +202,11 @@ pub async fn get_queue(state: St<'_>) -> Result<serde_json::Value, String> {
 /// `visitor_data`) and internal blobs (`queue_json`, `queue_index`, `queue_position`) never cross
 /// into the webview: they'd otherwise ship the login credential to the renderer on every open, and
 /// the webview can't overwrite them either.
-const UI_SETTINGS: [&str; 22] = [
+const UI_SETTINGS: [&str; 23] = [
     "volume",
     "proxy",
     "quality",
+    "normalize_volume",
     "enable_history",
     "disabled_stream_clients",
     "discord_rpc",
@@ -245,7 +249,7 @@ pub async fn video_stream(
     }
     // The webview picks the height from its own box, so clamp it here rather than trusting it.
     let max_height = max_height.clamp(144, 1080);
-    match state.orchestrator.resolve_video(&video_id, max_height).await {
+    match state.orchestrator.resolve_video(&video_id, max_height, &state.disabled_clients()).await {
         Some(url) => {
             state.put_video_url(&video_id, url);
             Ok(crate::videoproxy::url_for(&video_id))
@@ -312,6 +316,11 @@ pub async fn set_setting(
     if key == "discord_rpc_config" {
         state.set_discord_config(&value);
     }
+    // Retune the track that's playing. Unlike crossfade below, this one has to apply to what the
+    // user is hearing right now: the switch exists so they can A/B the same loud section (#298).
+    if key == "normalize_volume" {
+        state.reapply_gain().await;
+    }
     // Both halves are one player setting. Applies from the next track change: the transition the
     // user is already hearing keeps the length it started with.
     if key == "crossfade" || key == "crossfade_secs" {
@@ -357,6 +366,50 @@ pub async fn set_setting(
         res.map_err(|e| format!("autostart: {e}"))?;
     }
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_global_hotkeys(
+    hotkeys: State<'_, Arc<crate::hotkeys::HotkeysManager>>,
+) -> Result<crate::hotkeys::HotkeysConfig, String> {
+    Ok(hotkeys.get_config())
+}
+
+/// A Wayland session, where the X11 grab the hotkeys use only fires if the compositor passes keys
+/// on to XWayland (KDE Plasma does, GNOME does not). The GDK backend doesn't matter, the session does.
+#[tauri::command]
+pub fn global_hotkeys_on_wayland() -> bool {
+    cfg!(target_os = "linux") && std::env::var_os("WAYLAND_DISPLAY").is_some()
+}
+
+#[tauri::command]
+pub async fn set_global_hotkeys(
+    app: tauri::AppHandle,
+    state: St<'_>,
+    hotkeys: State<'_, Arc<crate::hotkeys::HotkeysManager>>,
+    config: crate::hotkeys::HotkeysConfig,
+) -> Result<crate::hotkeys::HotkeyRegisterResult, String> {
+    let result = hotkeys.apply_config(&app, config);
+    // Saved even on partial failure: apply_config already made this the live config, and a
+    // combo another app holds shouldn't cost the user every other binding on the next launch.
+    crate::hotkeys::save_config(&state.db, &result.config);
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn reset_global_hotkeys(
+    app: tauri::AppHandle,
+    state: St<'_>,
+    hotkeys: State<'_, Arc<crate::hotkeys::HotkeysManager>>,
+) -> Result<crate::hotkeys::HotkeyRegisterResult, String> {
+    // Resets the bindings only: the default has hotkeys off, and the button is on the enabled page.
+    let default_config = crate::hotkeys::HotkeysConfig {
+        enabled: hotkeys.get_config().enabled,
+        ..Default::default()
+    };
+    let result = hotkeys.apply_config(&app, default_config);
+    crate::hotkeys::save_config(&state.db, &result.config);
+    Ok(result)
 }
 
 /// The streamable client keys the orchestrator tries, for the "disabled clients" setting. Names
@@ -621,6 +674,7 @@ pub async fn get_library(state: St<'_>) -> Result<Vec<BrowseItem>, String> {
                 subtitle: Some(format!("{} songs", songs.len())),
                 thumbnail: None, // the UI draws an icon cover for this one
                 duration: None,
+                album_id: None,
                 artist_runs: Vec::new(),
                 play_count: None,
                 is_video: false,

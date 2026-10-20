@@ -18,6 +18,7 @@ import * as pl from './personal';
 import type { Personal } from './personal';
 import { appearance } from './theme.svelte';
 import { currentLocale, pushLocaleToRust, t } from './i18n.svelte';
+import { friendlyNetError } from './neterr';
 
 export const playback = $state({
 	now: null as NowPlaying | null,
@@ -1104,7 +1105,10 @@ let seq = 0;
 
 function show(msg: string, kind: Toast['kind']) {
 	const id = ++seq;
-	ui.toast = { msg, kind };
+	// The one chokepoint every `toast.error(String(e))` and every `playback-error` event goes
+	// through, so a dead connection is worded once here instead of at forty call sites. Anything
+	// that isn't a network failure (including every `t()` string passing through) is untouched.
+	ui.toast = { msg: friendlyNetError(msg, t('errors.unreachable')), kind };
 	setTimeout(() => {
 		if (seq === id) ui.toast = null;
 	}, 2500);
@@ -1239,7 +1243,10 @@ export function initApp(mini = false): () => void {
 		api.onVolume((v) => {
 			// Not while our own drag is in flight: the echo is a value the pointer has already
 			// moved past, and applying it would yank the thumb backwards mid-drag.
-			if (volFrame === null) playback.volume = v;
+			if (volFrame !== null) return;
+			// Muted from elsewhere (the global hotkey): remember the level, so unmuting here restores it.
+			if (v === 0 && playback.volume > 0) preMute = playback.volume;
+			playback.volume = v;
 		}),
 		api.onPlaybackError((msg) => toast.error(msg)),
 		api.onPlaybackNotice((msg) => toast(msg)), // auto-skipped an unplayable track
