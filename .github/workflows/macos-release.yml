@@ -157,7 +157,16 @@ jobs:
           set -euo pipefail
           brew tap-new --no-git limusic/local
           cp .ci-recipes/scripts/macos/mpv.rb "$(brew --repository limusic/local)/Formula/mpv.rb"
+          # mpv has Swift sources, and brew compiles them with the selected Xcode's swiftc (5.10 on
+          # macos-14) against the Command Line Tools SDK (built by Swift 6.0.3), which swiftc refuses:
+          # "this SDK is not supported by the compiler". Select the CLT for this one build so the
+          # compiler and SDK come from the same install, and put the default back for everything
+          # after it, the Tauri build included.
+          sudo xcode-select -s /Library/Developer/CommandLineTools
+          trap 'sudo xcode-select -r' EXIT
           brew install --build-from-source limusic/local/mpv
+          sudo xcode-select -r
+          trap - EXIT
           brew install dylibbundler
           # Prove the libmpv being bundled is the one just built, not a bottle that got in first.
           # A failed patch already fails the install, so source + tap is what is left to check.
